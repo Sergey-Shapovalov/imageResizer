@@ -6,6 +6,8 @@ import { type UploadError, downloadUrl, getResizeStatus, resizeImages, uploadIma
 
 type Phase = 'select' | 'uploaded' | 'resized'
 
+const POLLING_DEADLINE_MS = 2 * 60 * 1000
+
 export default function App() {
     const { t } = useTranslation()
 
@@ -58,20 +60,22 @@ export default function App() {
         setResizing(true)
         setError(null)
         try {
+            const deadline = Date.now() + POLLING_DEADLINE_MS
             const jobId = await resizeImages(blobNames, percentage)
-            while (true) {
+            while (Date.now() < deadline) {
                 await new Promise(r => setTimeout(r, 1000))
                 const result = await getResizeStatus(jobId)
                 if (result.status === 'done') {
                     setResizedBlobNames(result.resizedBlobNames)
                     setPhase('resized')
-                    break
+                    return
                 }
                 if (result.status === 'failed') {
                     setError(result.error ?? t('errors.resizeFailed'))
-                    break
+                    return
                 }
             }
+            setError(t('errors.resizeTimeout'))
         }
         catch (e) {
             if (isAxiosError(e) && e.response?.status === 503)

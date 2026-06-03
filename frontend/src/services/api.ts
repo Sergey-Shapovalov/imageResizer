@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const client = axios.create({ baseURL: '/api/images' })
+const client = axios.create({ baseURL: '/api/images', timeout: 30_000 })
 
 export interface UploadError {
   originalFileName: string

@@ -144,6 +144,28 @@ describe('App', () => {
         await waitFor(() => expect(screen.getByText(/too many requests/i)).toBeInTheDocument())
     })
 
+    it('shows timeout message when the job stays in processing past the deadline', async () => {
+        await goToStep2()
+        mockResize.mockResolvedValue('job-1')
+
+        let afterResizeImages = false
+        mockResize.mockImplementationOnce(async () => {
+            afterResizeImages = true
+            return 'job-1'
+        })
+        const dateSpy = vi.spyOn(Date, 'now').mockImplementation(
+            () => (afterResizeImages ? 120_001 : 0)
+        )
+
+        await act(async () => {
+            fireEvent.click(screen.getByRole('button', { name: 'Resize' }))
+            await new Promise(r => setTimeout(r, 0))
+        })
+
+        dateSpy.mockRestore()
+        expect(screen.getByText(/taking too long/i)).toBeInTheDocument()
+    })
+
     it('shows the server error message when resize job fails', async () => {
         await goToStep2()
         mockResize.mockResolvedValue('job-1')
