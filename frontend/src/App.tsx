@@ -191,10 +191,10 @@ export default function App() {
                 <section className="card">
                     <h2 className="card-title">{t('step3.heading')}</h2>
                     <ul className="file-list">
-                        {resizedBlobNames.map((name, i) => (
-                            <li className="file-list-item" key={name}>
-                                <a className="file-list-link" href={downloadUrl(name)} download>
-                                    {files[i]?.name ?? t('step3.fallbackName', { index: i + 1 })}
+                        {resizedBlobNames.map((blobName) => (
+                            <li className="file-list-item" key={blobName}>
+                                <a className="file-list-link" href={downloadUrl(blobName)} download>
+                                    {blobName.includes('_') ? blobName.slice(blobName.indexOf('_') + 1) : blobName}
                                 </a>
                                 <span className="muted">{t('step3.percentOfOriginal', { percentage })}</span>
                             </li>

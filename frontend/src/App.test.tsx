@@ -201,7 +201,7 @@ describe('App', () => {
     it('renders download links in Step 3', async () => {
         await goToStep2()
         mockResize.mockResolvedValue('job-1')
-        mockStatus.mockResolvedValue({ status: 'done', resizedBlobNames: ['blob1_resized'], error: undefined })
+        mockStatus.mockResolvedValue({ status: 'done', resizedBlobNames: ['abc_photo_resized.jpg'], error: undefined })
 
         vi.useFakeTimers()
         await act(async () => {
@@ -209,8 +209,8 @@ describe('App', () => {
             await vi.runAllTimersAsync()
         })
 
-        const link = screen.getByRole('link', { name: 'photo.jpg' })
-        expect(link).toHaveAttribute('href', '/api/images/download?blobName=blob1_resized')
+        const link = screen.getByRole('link', { name: 'photo_resized.jpg' })
+        expect(link).toHaveAttribute('href', '/api/images/download?blobName=abc_photo_resized.jpg')
     })
 
     // ── Reset ─────────────────────────────────────────────────────────────────
