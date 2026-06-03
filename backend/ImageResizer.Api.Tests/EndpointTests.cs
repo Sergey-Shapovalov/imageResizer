@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using ImageResizer.Api;
 using ImageResizer.Api.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -90,6 +91,36 @@ public class EndpointTests : IClassFixture<TestWebApplicationFactory>
         _mockBlobs.Verify(b => b.UploadOriginalAsync(It.IsAny<Stream>(), It.IsAny<string>(), It.IsAny<string>()), Times.Never);
     }
 
+    [Fact]
+    public async Task Upload_TooManyFiles_Returns400()
+    {
+        var form = new MultipartFormDataContent();
+        for (var i = 0; i < 11; i++)
+        {
+            var fileContent = new ByteArrayContent(JpegBytes);
+            fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+            form.Add(fileContent, "files", $"photo{i}.jpg");
+        }
+        var response = await _client.PostAsync("/api/images/upload", form);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Upload_FileTooLarge_Returns200WithSizeError()
+    {
+        var oversized = new byte[UploadLimits.MaxFileSizeBytes + 1];
+        var form = new MultipartFormDataContent();
+        var fileContent = new ByteArrayContent(oversized);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("image/jpeg");
+        form.Add(fileContent, "files", "big.jpg");
+        var response = await _client.PostAsync("/api/images/upload", form);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var body = await ParseJson(response);
+        Assert.Equal(0, body.GetProperty("filesUploaded").GetInt32());
+        var errorMsg = body.GetProperty("errors")[0].GetProperty("errorMessage").GetString();
+        Assert.Contains("30 MB", errorMsg);
+    }
+
     // ── Resize ────────────────────────────────────────────────────────────────
 
     [Fact]
@@ -110,6 +141,14 @@ public class EndpointTests : IClassFixture<TestWebApplicationFactory>
     public async Task Resize_EmptyBlobNames_Returns400()
     {
         var response = await PostJson("/api/images/resize", new { blobNames = Array.Empty<string>(), percentage = 50 });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
+
+    [Fact]
+    public async Task Resize_TooManyBlobNames_Returns400()
+    {
+        var blobNames = Enumerable.Range(0, 11).Select(i => $"blob{i}").ToArray();
+        var response = await PostJson("/api/images/resize", new { blobNames, percentage = 50 });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
@@ -136,7 +175,7 @@ public class EndpointTests : IClassFixture<TestWebApplicationFactory>
     public async Task Status_KnownJobId_Returns200WithStatus()
     {
         var queue = _factory.Services.GetRequiredService<ResizeJobQueue>();
-        var job = queue.Enqueue(["blob1"], 50f);
+        var job = queue.Enqueue(["blob1"], 50f)!;
 
         var response = await _client.GetAsync($"/api/images/resize/{job.JobId}/status");
 

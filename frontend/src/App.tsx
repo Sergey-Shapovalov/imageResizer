@@ -1,3 +1,4 @@
+import { isAxiosError } from 'axios'
 import { useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import './App.scss'
@@ -72,8 +73,13 @@ export default function App() {
                 }
             }
         }
-        catch {
-            setError(t('errors.resizeFailed'))
+        catch (e) {
+            if (isAxiosError(e) && e.response?.status === 503)
+                setError(t('errors.queueFull'))
+            else if (isAxiosError(e) && e.response?.status === 429)
+                setError(t('errors.rateLimited'))
+            else
+                setError(t('errors.resizeFailed'))
         }
         finally {
             setResizing(false)

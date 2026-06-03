@@ -19,40 +19,47 @@ public class ResizeWorkerService : BackgroundService
         _logger = logger;
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override Task ExecuteAsync(CancellationToken stoppingToken) =>
+        Parallel.ForEachAsync(
+            _queue.Reader.ReadAllAsync(stoppingToken),
+            new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount,
+                CancellationToken = stoppingToken,
+            },
+            ProcessJobAsync);
+
+    private async ValueTask ProcessJobAsync(ResizeJob job, CancellationToken ct)
     {
-        await foreach (var job in _queue.Reader.ReadAllAsync(stoppingToken))
+        job.Status = JobStatus.Processing;
+        try
         {
-            job.Status = JobStatus.Processing;
-            try
+            foreach (var blobName in job.BlobNames)
             {
-                foreach (var blobName in job.BlobNames)
+                if (job.Percentage == 0)
                 {
-                    if (job.Percentage == 0)
-                    {
-                        await _blobs.DeleteOriginalAsync(blobName);
-                    }
-                    else if (job.Percentage == 100)
-                    {
-                        job.ResizedBlobNames.Add(blobName);
-                    }
-                    else
-                    {
-                        var (originalStream, _) = await _blobs.DownloadOriginalAsync(blobName);
-                        var (resizedStream, contentType) = await _resizer.ResizeAsync(originalStream, job.Percentage);
-                        var resizedName = await _blobs.UploadResizedAsync(resizedStream, blobName, contentType);
-                        job.ResizedBlobNames.Add(resizedName);
-                        await _blobs.DeleteOriginalAsync(blobName);
-                    }
+                    await _blobs.DeleteOriginalAsync(blobName);
                 }
-                job.Status = JobStatus.Done;
+                else if (job.Percentage == 100)
+                {
+                    job.ResizedBlobNames.Add(blobName);
+                }
+                else
+                {
+                    var (originalStream, _) = await _blobs.DownloadOriginalAsync(blobName);
+                    var (resizedStream, contentType) = await _resizer.ResizeAsync(originalStream, job.Percentage);
+                    var resizedName = await _blobs.UploadResizedAsync(resizedStream, blobName, contentType);
+                    job.ResizedBlobNames.Add(resizedName);
+                    await _blobs.DeleteOriginalAsync(blobName);
+                }
             }
-            catch (Exception ex)
-            {
-                job.Status = JobStatus.Failed;
-                job.Error = ex.Message;
-                _logger.LogError(ex, "Resize job {JobId} failed.", job.JobId);
-            }
+            job.Status = JobStatus.Done;
+        }
+        catch (Exception ex)
+        {
+            job.Status = JobStatus.Failed;
+            job.Error = ex.Message;
+            _logger.LogError(ex, "Resize job {JobId} failed.", job.JobId);
         }
     }
 }

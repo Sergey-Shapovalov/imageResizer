@@ -12,7 +12,8 @@ public class ResizeJobQueueTests
 
         var job = queue.Enqueue(blobNames, 50f);
 
-        Assert.Equal(blobNames, job.BlobNames);
+        Assert.NotNull(job);
+        Assert.Equal(blobNames, job!.BlobNames);
         Assert.Equal(50f, job.Percentage);
         Assert.Equal(JobStatus.Queued, job.Status);
         Assert.NotEmpty(job.JobId);
@@ -25,7 +26,8 @@ public class ResizeJobQueueTests
 
         var job = queue.Enqueue(["blob1"], 75f);
 
-        Assert.Same(job, queue.GetJob(job.JobId));
+        Assert.NotNull(job);
+        Assert.Same(job, queue.GetJob(job!.JobId));
     }
 
     [Fact]
@@ -43,6 +45,7 @@ public class ResizeJobQueueTests
 
         var job = queue.Enqueue(["blob1"], 50f);
 
+        Assert.NotNull(job);
         Assert.True(queue.Reader.TryRead(out var read));
         Assert.Same(job, read);
     }
@@ -55,8 +58,22 @@ public class ResizeJobQueueTests
         var job1 = queue.Enqueue(["blob1"], 25f);
         var job2 = queue.Enqueue(["blob2"], 75f);
 
-        Assert.Same(job1, queue.GetJob(job1.JobId));
-        Assert.Same(job2, queue.GetJob(job2.JobId));
+        Assert.NotNull(job1);
+        Assert.NotNull(job2);
+        Assert.Same(job1, queue.GetJob(job1!.JobId));
+        Assert.Same(job2, queue.GetJob(job2!.JobId));
         Assert.NotEqual(job1.JobId, job2.JobId);
+    }
+
+    [Fact]
+    public void Enqueue_QueueFull_ReturnsNull()
+    {
+        var queue = new ResizeJobQueue(capacity: 2);
+        queue.Enqueue(["blob0"], 50f);
+        queue.Enqueue(["blob1"], 50f);
+
+        var overflow = queue.Enqueue(["blob_extra"], 50f);
+
+        Assert.Null(overflow);
     }
 }

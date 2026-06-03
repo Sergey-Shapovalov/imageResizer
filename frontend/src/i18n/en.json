@@ -27,6 +27,8 @@
     "errors": {
         "allFilesFailed": "All files failed to upload.",
         "uploadFailed": "Upload failed. Check the server and Azure Storage configuration.",
-        "resizeFailed": "Resize failed."
+        "resizeFailed": "Resize failed.",
+        "queueFull": "The server is busy — please try again in a moment.",
+        "rateLimited": "Too many requests — please wait a moment and try again."
     }
 }

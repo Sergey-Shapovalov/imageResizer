@@ -126,6 +126,24 @@ describe('App', () => {
         expect(screen.getByText(/Step 3/)).toBeInTheDocument()
     })
 
+    it('shows queue-full message when the resize request returns 503', async () => {
+        await goToStep2()
+        mockResize.mockRejectedValue(
+            Object.assign(new Error(), { isAxiosError: true, response: { status: 503 } })
+        )
+        fireEvent.click(screen.getByRole('button', { name: 'Resize' }))
+        await waitFor(() => expect(screen.getByText(/busy/i)).toBeInTheDocument())
+    })
+
+    it('shows rate-limited message when the resize request returns 429', async () => {
+        await goToStep2()
+        mockResize.mockRejectedValue(
+            Object.assign(new Error(), { isAxiosError: true, response: { status: 429 } })
+        )
+        fireEvent.click(screen.getByRole('button', { name: 'Resize' }))
+        await waitFor(() => expect(screen.getByText(/too many requests/i)).toBeInTheDocument())
+    })
+
     it('shows the server error message when resize job fails', async () => {
         await goToStep2()
         mockResize.mockResolvedValue('job-1')
