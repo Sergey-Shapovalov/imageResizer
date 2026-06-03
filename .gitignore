@@ -1,0 +1,25 @@
+# ── .NET ─────────────────────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+*.suo
+.vs/
+TestResults/
+
+# ── Node / frontend ───────────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+
+# ── Environment & secrets ─────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Azurite (local Azure Storage emulator) ───────────────────────────────────
+__azurite_db_*.json
+__blobstorage__/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db

@@ -1,0 +1,32 @@
+{
+    "title": "Image Resizer",
+    "step1": {
+        "heading": "Step 1 of 3 — Select images",
+        "chooseImages": "Choose images",
+        "filesSelected": "{{count}} file(s) selected",
+        "upload": "Upload",
+        "uploading": "Uploading…"
+    },
+    "step2": {
+        "heading": "Step 2 of 3 — Resize",
+        "imagesReady": "{{count}} image(s) ready on server.",
+        "resizeTo": "Resize to",
+        "ofOriginalSize": "% of original size",
+        "resize": "Resize",
+        "resizing": "Resizing…",
+        "uploadErrorCount": "{{count}} file(s) failed to upload."
+    },
+    "step3": {
+        "heading": "Step 3 of 3 — Download",
+        "fallbackName": "image_{{index}}",
+        "percentOfOriginal": "{{percentage}}% of original"
+    },
+    "actions": {
+        "restart": "Restart"
+    },
+    "errors": {
+        "allFilesFailed": "All files failed to upload.",
+        "uploadFailed": "Upload failed. Check the server and Azure Storage configuration.",
+        "resizeFailed": "Resize failed."
+    }
+}
