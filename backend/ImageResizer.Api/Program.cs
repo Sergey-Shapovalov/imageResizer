@@ -1,11 +1,21 @@
 using ImageResizer.Api;
 using ImageResizer.Api.Services;
+using Microsoft.AspNetCore.HttpOverrides;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.WebHost.ConfigureKestrel(o =>
     o.Limits.MaxRequestBodySize = 10L * UploadLimits.MaxFileSizeBytes);
+
+// Trust X-Forwarded-For so the rate limiter partitions by real client IP, not the
+// proxy IP, in App Service / Application Gateway / AKS ingress / CDN deployments.
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(p =>
@@ -34,6 +44,7 @@ builder.Services.AddHostedService<ResizeWorkerService>();
 builder.Services.AddHostedService<BlobCleanupService>();
 
 var app = builder.Build();
+app.UseForwardedHeaders();
 app.UseCors();
 app.UseRateLimiter();
 
