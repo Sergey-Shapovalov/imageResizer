@@ -118,7 +118,7 @@ public class EndpointTests : IClassFixture<TestWebApplicationFactory>
         var body = await ParseJson(response);
         Assert.Equal(0, body.GetProperty("filesUploaded").GetInt32());
         var errorMsg = body.GetProperty("errors")[0].GetProperty("errorMessage").GetString();
-        Assert.Contains("30 MB", errorMsg);
+        Assert.Contains($"{UploadLimits.MaxFileSizeBytes / 1024 / 1024} MB", errorMsg);
     }
 
     // ── Resize ────────────────────────────────────────────────────────────────
