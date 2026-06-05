@@ -3,6 +3,7 @@ using System.Threading.Channels;
 
 namespace ImageResizer.Api.Services;
 
+// In-memory queue for resize jobs. In a production system, this would likely be backed by a persistent store or message queue.
 public class ResizeJobQueue
 {
     private readonly Channel<ResizeJob> _channel;
@@ -14,6 +15,7 @@ public class ResizeJobQueue
             new BoundedChannelOptions(capacity) { FullMode = BoundedChannelFullMode.Wait });
     }
 
+    // Enqueue a new resize job. Returns null if the queue is full. 
     public ResizeJob? Enqueue(List<string> blobNames, float percentage)
     {
         var job = new ResizeJob { BlobNames = blobNames, Percentage = percentage };

@@ -2,6 +2,9 @@ using SkiaSharp;
 
 namespace ImageResizer.Api.Services;
 
+// Service that performs the actual image resizing using SkiaSharp. 
+// It also checks the image dimensions against a pixel budget to guard against decompression bombs 
+// before allocating memory for the bitmap.
 public class ImageResizeService
 {
     // Guard against decompression bombs before allocating full bitmap memory.
@@ -22,6 +25,7 @@ public class ImageResizeService
 
         if (codec is not null)
         {
+            // Check pixel count against budget to prevent DoS via decompression bombs.
             var (w, h) = (codec.Info.Width, codec.Info.Height);
             if ((long)w * h > MaxPixelBudget)
                 throw new InvalidOperationException(

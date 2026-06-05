@@ -1,5 +1,7 @@
 namespace ImageResizer.Api.Services;
 
+// Background service that periodically deletes old blobs that were not processed within a 
+// configurable time frame.
 public class BlobCleanupService : BackgroundService
 {
     private readonly IBlobStorageService _blobs;

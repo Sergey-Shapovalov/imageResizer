@@ -17,12 +17,14 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.KnownProxies.Clear();
 });
 
+// CORS policy to allow the frontend to call the API. For the test assignment purpose hardcoded the localhost origin.
 builder.Services.AddCors(options =>
     options.AddDefaultPolicy(p =>
         p.WithOrigins("http://localhost:5173")
          .AllowAnyHeader()
          .AllowAnyMethod()));
 
+// Basic IP-based rate limiting to mitigate DoS and abuse. In production, more sophisticated approaches may be applied
 builder.Services.AddRateLimiter(o =>
 {
     o.AddPolicy("api", context =>
@@ -37,10 +39,15 @@ builder.Services.AddRateLimiter(o =>
     o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 });
 
+// Azure-based blob storage service
 builder.Services.AddSingleton<IBlobStorageService, BlobStorageService>();
+// Image resizing service using SkiaSharp
 builder.Services.AddSingleton<ImageResizeService>();
+// Background service that processes the resize jobs from the queue
 builder.Services.AddSingleton<ResizeJobQueue>();
+// Hosted service for processing resize jobs
 builder.Services.AddHostedService<ResizeWorkerService>();
+// Hosted service for cleaning up old blobs
 builder.Services.AddHostedService<BlobCleanupService>();
 
 var app = builder.Build();
@@ -48,6 +55,7 @@ app.UseForwardedHeaders();
 app.UseCors();
 app.UseRateLimiter();
 
+// Endpoints implemented using the minimal APIs pattern for simplicity and performance.
 app.MapPost("/api/images/upload", async (
     IFormFileCollection files,
     IBlobStorageService blobs) =>
@@ -55,6 +63,7 @@ app.MapPost("/api/images/upload", async (
     if (files.Count == 0)
         return Results.BadRequest("No files provided.");
 
+    // Limit the number of files to prevent DoS and excessive memory usage.
     if (files.Count > 10)
         return Results.BadRequest("Cannot upload more than 10 files at once.");
 
@@ -63,6 +72,7 @@ app.MapPost("/api/images/upload", async (
 
     foreach (var file in files)
     {
+        // Validate file size before processing to avoid excessive memory usage.
         if (file.Length > UploadLimits.MaxFileSizeBytes)
         {
             errors.Add(new UploadError(file.FileName, $"File exceeds the {UploadLimits.MaxFileSizeBytes / 1024 / 1024} MB per-file limit."));
@@ -104,6 +114,7 @@ app.MapPost("/api/images/resize", (
     if (request.BlobNames.Count > 10)
         return Results.BadRequest("Cannot resize more than 10 images per job.");
 
+    // Enqueue the job. If the queue is full, return 503 to signal the client to retry later.
     var job = queue.Enqueue(request.BlobNames, request.Percentage);
     if (job is null)
         return Results.StatusCode(503);

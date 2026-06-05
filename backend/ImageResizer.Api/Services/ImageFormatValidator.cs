@@ -1,5 +1,7 @@
 namespace ImageResizer.Api.Services;
 
+// Utility class to validate that an uploaded file is a supported image format (JPEG or PNG) 
+// by checking the file signature (magic numbers).
 public static class ImageFormatValidator
 {
     private static readonly byte[] JpegPrefix = [0xFF, 0xD8, 0xFF];

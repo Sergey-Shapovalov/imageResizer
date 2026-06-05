@@ -1,5 +1,11 @@
 namespace ImageResizer.Api.Services;
 
+// Background service that continuously processes resize jobs from the queue. 
+// It uses parallel processing to handle multiple jobs concurrently, 
+// with a degree of parallelism equal to the number of processor cores. 
+// Each job is processed by downloading the original blobs, resizing them using the ImageResizeService, 
+// uploading the resized images, and then deleting the original blobs. 
+// The job status is updated accordingly, and any errors are logged.
 public class ResizeWorkerService : BackgroundService
 {
     private readonly ResizeJobQueue _queue;
@@ -36,10 +42,15 @@ public class ResizeWorkerService : BackgroundService
         {
             foreach (var blobName in job.BlobNames)
             {
+                // If percentage is 0, we don't do any resize and skip the upload of a resized version, 
+                // but we still delete the original blob to clean up.
                 if (job.Percentage == 0)
                 {
                     await _blobs.DeleteOriginalAsync(blobName);
                 }
+                // If percentage is 100, we just return the original blob as the resized version without doing any processing,
+                // but we still add it to the list of resized blob names for the client to download, 
+                // and we don't delete the original blob since it's also the resized version in this case.
                 else if (job.Percentage == 100)
                 {
                     job.ResizedBlobNames.Add(blobName);

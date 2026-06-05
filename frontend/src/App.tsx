@@ -56,6 +56,12 @@ export default function App() {
         }
     }
 
+    /**
+     * Handles the resize operation for the uploaded images.
+     * The resize job is initiated by calling the resizeImages API with the blob names and desired percentage.
+     * Then it's enqueued in the backend, and we receive a job ID in response.
+     * The handler polls the backend for the status of the resize job until it is done or a timeout occurs.
+     */
     const handleResize = async () => {
         setResizing(true)
         setError(null)
